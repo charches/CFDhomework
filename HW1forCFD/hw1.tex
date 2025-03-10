@@ -128,4 +128,49 @@
     \begin{equation}
         p = \rho T
     \end{equation}
+
+\section{推导一维欧拉方程通量表达式的Jacobi矩阵}
+注意到：
+    \begin{equation}
+        p = \rho R T = \rho C_{v}(\gamma - 1)T = (\gamma - 1)(E - \frac{1}{2}\rho u^2)
+    \end{equation}
+
+记$A = \rho$，$B = \rho u$以及$C = E$， 则有：
+    \begin{equation}
+        f(U) = 
+        \left(
+            \begin{array}{ccc} 
+                B\\ 
+                (\gamma-1)C + \frac{1}{2}(3-\gamma)\frac{B^2}{A}\\ 
+                \gamma\frac{BC}{A}-\frac{1}{2}(\gamma - 1)\frac{B^3}{A^2}
+            \end{array}
+        \right)
+    \end{equation}
+
+    对$A$，$B$和$C$求偏导，并代回，得到Jacobi矩阵：
+    \begin{equation}
+        \left(
+            \begin{array}{ccc} 
+                0 & 1 & 0\\ 
+                u^2\,\left(\frac{\gamma }{2}-\frac{3}{2}\right) & -u\,\left(\gamma -3\right) & \gamma -1\\ 
+                u^3\,\left(\gamma -1\right)-\frac{E\,\gamma \,u}{\rho } & \frac{E\,\gamma }{\rho }-u^2\,\left(\frac{3\,\gamma }{2}-\frac{3}{2}\right) & \gamma \,u 
+            \end{array}
+        \right)
+    \end{equation}
+    
+    特征多项式为：
+    \begin{equation}
+        \lambda ^3+-3\,u\,\lambda ^2+\left(3\,u^2-\frac{\gamma \,u^2}{2}+\frac{\gamma ^2\,u^2}{2}-\frac{E\,\gamma ^2}{\rho }+\frac{E\,\gamma }{\rho }\right)\,\lambda +\frac{\gamma \,u^3}{2}-u^3-\frac{\gamma ^2\,u^3}{2}-\frac{E\,\gamma \,u}{\rho }+\frac{E\,\gamma ^2\,u}{\rho }
+    \end{equation}
+
+    特征值为：
+    \begin{equation}
+        \left(
+            \begin{array}{c} 
+                u\\ 
+                u-\frac{\sqrt{2}\,\sqrt{\frac{\gamma \,\left(2\,E-\rho \,u^2\right)\,\left(\gamma -1\right)}{\rho }}}{2}\\ 
+                u+\frac{\sqrt{2}\,\sqrt{\frac{\gamma \,\left(2\,E-\rho \,u^2\right)\,\left(\gamma -1\right)}{\rho }}}{2} 
+            \end{array}
+        \right)
+    \end{equation}
 \end{document}
