@@ -19,6 +19,113 @@
 
 \maketitle % 显示标题
 
+\section{流体力学方程组的无量纲化}
+引入如下无量纲参数：
+    \begin{equation}
+        \begin{gathered}
+            x = \frac{x^{*}}{L_{\infty}} \quad 
+            y = \frac{y^{*}}{L_{\infty}} \quad 
+            z = \frac{z^{*}}{L_{\infty}} \\
+            u = \frac{u^{*}}{U_{\infty}} \quad 
+            v = \frac{v^{*}}{U_{\infty}} \quad 
+            w = \frac{w^{*}}{U_{\infty}} \\
+            \mu = \frac{\mu^{*}}{\mu_{\infty}} \quad
+            k = \frac{k^{*}}{k_{\infty}} \quad
+            T = \frac{T^{*}}{T_{\infty}} \quad
+            \rho = \frac{\rho^{*}}{\rho_{\infty}} \\
+            p_{\infty} = \rho_{\infty}RT_{\infty} \quad
+            c_{\infty} = \sqrt{\gamma R T_{\infty}} \\
+            \tau = \frac{\tau^{*}}{\frac{\mu_{\infty}U_{\infty}}{L_{\infty}}} \quad
+            t = \frac{t^{*}U_{\infty}}{L_{\infty}} \\
+            M_{\infty} = \frac{U_{\infty}}{c_{\infty}} \quad
+            Pr = \frac{\mu_{\infty}C_{p}}{k_{\infty}} = \frac{\mu_{\infty}\gamma R}{k_{\infty}(\gamma - 1)} \quad
+            Re = \frac{\rho_{\infty}U_{\infty}L_{\infty}}{\mu_{\infty}} \\
+            p = \frac{p^{*}}{\gamma M_{\infty}^{2}p_{\infty}} \quad
+            E = \frac{E^{*}}{\gamma M_{\infty}^{2}p_{\infty}}
+        \end{gathered}
+    \end{equation}
+其中$M_{\infty}$为无穷远处马赫数，$Pr$是普朗特数，$Re$是雷诺数。
 
+代入连续性方程，得：
+    \begin{equation}
+        \frac{\rho_{\infty}U_{\infty}}{L_{\infty}}\frac{\partial\rho}{\partial t} +
+        \frac{\rho_{\infty}U_{\infty}}{L_{\infty}}\frac{\partial(\rho u)}{\partial x} +
+        \frac{\rho_{\infty}U_{\infty}}{L_{\infty}}\frac{\partial(\rho v)}{\partial y} +
+        \frac{\rho_{\infty}U_{\infty}}{L_{\infty}}\frac{\partial(\rho w)}{\partial z} =
+        0
+    \end{equation}
+即：
+    \begin{equation}
+        \frac{\partial\rho}{\partial t} +
+        \frac{\partial(\rho u)}{\partial x} +
+        \frac{\partial(\rho v)}{\partial y} +
+        \frac{\partial(\rho w)}{\partial z} =
+        0
+    \end{equation}
 
+代入$x$方向动量方程，得:
+    \begin{equation}
+        \begin{gathered}
+            \frac{\rho_{\infty}U_{\infty}^{2}}{L_{\infty}}
+            \frac{\partial(\rho u)}{\partial t} +
+            \frac{1}{L_{\infty}}
+            \frac{\partial(\rho_{\infty}U_{\infty}^{2}\rho u^{2} + \gamma M_{\infty}^{2}p_{\infty}p)}{\partial x} +
+            \frac{\rho_{\infty}U_{\infty}^{2}}{L_{\infty}}
+            \frac{\partial(\rho u v)}{\partial y} + 
+            \frac{\rho_{\infty}U_{\infty}^{2}}{L_{\infty}} \\
+            \frac{\partial(\rho u w)}{\partial z} =
+            \frac{\mu_{\infty}U_{\infty}}{L_{\infty}^2}\frac{\partial{\tau_{xx}}}{\partial x} +
+            \frac{\mu_{\infty}U_{\infty}}{L_{\infty}^2}\frac{\partial{\tau_{yx}}}{\partial y} +
+            \frac{\mu_{\infty}U_{\infty}}{L_{\infty}^2}\frac{\partial{\tau_{zx}}}{\partial z}
+        \end{gathered}
+    \end{equation}
+注意到：
+    \begin{equation}
+        \begin{gathered}
+            \gamma M_{\infty}^{2}p_{\infty} = \frac{\gamma U_{\infty}^{2}p_{\infty}}{\gamma R T_{\infty}} = \rho_{\infty}U_{\infty}^{2}
+        \end{gathered}
+    \end{equation}
+将两侧同时除以$\frac{\rho_{\infty}U_{\infty}^{2}}{L_{\infty}}$，得：
+    \begin{equation}
+        \begin{gathered}
+            \frac{\partial(\rho u)}{\partial t} +
+            \frac{\partial(\rho u^{2} + p)}{\partial x} +
+            \frac{\partial(\rho u v)}{\partial y} +
+            \frac{\partial(\rho u w)}{\partial z} =
+            \frac{1}{Re}(\frac{\partial{\tau_{xx}}}{\partial x} + \frac{\partial{\tau_{yx}}}{\partial y} + \frac{\partial{\tau_{zx}}}{\partial z})
+        \end{gathered}
+    \end{equation}
+类似可得另外两方向动量方程。
+
+代入能量方程，得：
+    \begin{equation}
+        \begin{gathered}
+            \frac{\gamma M_{\infty}^{2}p_{\infty}U_{\infty}}{L_{\infty}}(\frac{\partial E}{\partial t} + \frac{\partial[u(E+p)]}{\partial x} + \frac{\partial[v(E+p)]}{\partial y} + \frac{\partial[w(E+p)]}{\partial z}) = \\
+            \frac{1}{L_{\infty}}\frac{\partial}{\partial x}[\frac{k_{\infty}T_{\infty}}{L_{\infty}}k\frac{\partial T}{\partial x} + \frac{U_{\infty}^2\mu_{\infty}}{L_{\infty}}(u\tau_{xx} + v\tau_{xy} + w\tau_{xz})] + \\
+            \frac{1}{L_{\infty}}\frac{\partial}{\partial y}[\frac{k_{\infty}T_{\infty}}{L_{\infty}}k\frac{\partial T}{\partial y} + \frac{U_{\infty}^2\mu_{\infty}}{L_{\infty}}(u\tau_{yx} + v\tau_{yy} + w\tau_{yz})] +\\
+            \frac{1}{L_{\infty}}\frac{\partial}{\partial z}[\frac{k_{\infty}T_{\infty}}{L_{\infty}}k\frac{\partial T}{\partial z} + \frac{U_{\infty}^2\mu_{\infty}}{L_{\infty}}(u\tau_{zx} + v\tau_{zy} + w\tau_{zz})] +
+        \end{gathered}
+    \end{equation}
+注意到：
+    \begin{equation}
+        \frac{k_{\infty}{T_\infty}}{L^2_{\infty}} = \frac{\mu_{\infty}C_pT_{\infty}}{L_{\infty}^2Pr} = \frac{\mu_{\infty}\gamma RT_{\infty}}{L_{\infty}^2Pr(\gamma - 1)} = \frac{\mu_{\infty}c_{\infty}^2}{L_{\infty}^2Pr(\gamma - 1)}
+    \end{equation}
+将等式两侧同时除以$\frac{U_{\infty}^2\mu_{\infty}}{L_{\infty}^2}$得：
+    \begin{equation}
+        \begin{gathered}
+            \frac{\partial E}{\partial t} + \frac{\partial[u(E+p)]}{\partial x} + \frac{\partial[v(E+p)]}{\partial y} + \frac{\partial[w(E+p)]}{\partial z} = \\
+            \frac{1}{Re}\{ \frac{\partial}{\partial x}[\frac{1}{PrM^2_{\infty}(\gamma-1)}k\frac{\partial T}{\partial x} + u\tau_{xx} + v\tau_{xy} + w\tau_{xz}] + \\
+            \frac{\partial}{\partial y}[\frac{1}{PrM^2_{\infty}(\gamma-1)}k\frac{\partial T}{\partial y} + u\tau_{yx} + v\tau_{yy} + w\tau_{yz}] + \\
+            \frac{\partial}{\partial z}[\frac{1}{PrM^2_{\infty}(\gamma-1)}k\frac{\partial T}{\partial z} + u\tau_{zx} + v\tau_{zy} + w\tau_{zz}]\} 
+        \end{gathered}
+    \end{equation}
+
+代入状态方程:
+    \begin{equation}
+        p_{\infty}p = \rho_{\infty}\rho R T_{\infty}T
+    \end{equation}
+得到：
+    \begin{equation}
+        p = \rho T
+    \end{equation}
 \end{document}
