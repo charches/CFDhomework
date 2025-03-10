@@ -1,0 +1,15 @@
+.vscode/
+
+# 忽略 LaTeX 编译过程中生成的文件
+*.aux
+*.bbl
+*.blg
+*.log
+*.toc
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# 忽略最终生成的 PDF 文件
+*.pdf
