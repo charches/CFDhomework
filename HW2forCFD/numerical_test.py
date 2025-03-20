@@ -99,6 +99,36 @@ class finite_diff(ABC):
         # 显示图像
         plt.show()
 
+    def float_precision_compute(self):#仍以sin为例讨论单双精度的区别
+        order = self.order()
+        h_values = np.logspace(-10, 0, 100)
+        err_32 = []
+        err_64 = []
+        x_32 = np.float32(1)
+        x_64 = np.float64(1)
+        if order == 1:
+            u_e_32 = np.cos(x_32).astype(np.float32)
+            u_e_64 = np.cos(x_64).astype(np.float64)
+        elif order == 2:
+            u_e_32 = -np.sin(x_32).astype(np.float32)
+            u_e_64 = -np.sin(x_64).astype(np.float64)
+        for h in h_values:
+            err_32.append(np.abs(self.compute(lambda x: np.sin(x), h, 1, np.float32) - u_e_32))
+            err_64.append(np.abs(self.compute(lambda x: np.sin(x), h, 1, np.float64) - u_e_64))
+        return h_values, err_32, err_64
+    
+    def float_precision_paint(self):#ai生成
+        h_values, err_32, err_64 = self.float_precision_compute()
+        plt.figure(figsize=(8, 6))
+        plt.loglog(h_values, err_32, label="Single Precision (float32)", marker='o', markersize=4)
+        plt.loglog(h_values, err_64, label="Double Precision (float64)", marker='x', markersize=4)
+        plt.xlabel("Step size h (log scale)")
+        plt.ylabel("Error (log scale)")
+        plt.title("Error Comparison of Single vs Double Precision of " + self.name(), fontsize=14)
+        plt.legend()
+        plt.grid(which="both", linestyle="--", linewidth=0.5)
+        plt.show()
+
 #一阶导数的前向差分
 class forward_diff_1st(finite_diff):
     def compute(self, f, h, x, dtype = np.float64): #f是函数，h是步长，x是目标点，dtype是精度
@@ -173,5 +203,11 @@ def error_analysis():
     for diff in diffs:
         diff.error_paint()
 
-#convergence_order()
+def float_precision():
+    diffs = [forward_diff_1st(), forward_diff_2st(), central_diff_1st(), central_diff_2st()]
+    for diff in diffs:
+        diff.float_precision_paint()
+
+convergence_order()
 error_analysis()
+float_precision()
