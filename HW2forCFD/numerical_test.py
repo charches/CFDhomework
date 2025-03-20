@@ -20,6 +20,10 @@ class finite_diff(ABC):
     def order(self):#返回导数阶数
         pass
 
+    @abstractmethod
+    def expo(self):#返回用于比较舍入误差的多项式x^n次数
+        pass
+
     #精度计算,浮点精度采用默认单精度
     def convergence_order_compute(self): #diff_method是采取的差分格式
         h_values = np.logspace(-3, 0, 100) #1到1e-3的100个等比步长
@@ -51,6 +55,49 @@ class finite_diff(ABC):
         plt.grid(True, which='both', linestyle='--', alpha=0.7)
         plt.show()
 
+    def error_compute(self): #分析误差，仍选取目标点为1
+        expo = self.expo()
+        order = self.order()
+        poly = lambda x: x ** expo
+        h_values = np.logspace(-10, 0, 100)
+        err_poly = []
+        err_sin = []
+        #计算导数精确值
+        if order == 1:
+            u_e_poly = expo
+            u_e_sin = np.cos(1)
+        elif order == 2:
+            u_e_poly = expo * (expo - 1)
+            u_e_sin = -np.sin(1)
+        for h in h_values:
+            err_poly.append(np.abs(self.compute(poly, h, 1, np.float64) - u_e_poly) + 1e-12)#加一个小量，避免取loglog后无穷
+            err_sin.append(np.abs(self.compute(lambda x: np.sin(x), h, 1, np.float64) - u_e_sin))
+        return h_values, err_poly, err_sin
+    
+    def error_paint(self): #ai生成
+        h_values, err_poly, err_sin = self.error_compute()
+        # 创建图像窗口
+        plt.figure(figsize=(8, 6))
+        
+        # 绘制多项式函数的误差曲线
+        plt.loglog(h_values, err_poly, label="Polynomial Error", color="blue", linewidth=2)
+        
+        # 绘制正弦函数的误差曲线
+        plt.loglog(h_values, err_sin, label="Sin Function Error", color="red", linewidth=2)
+        
+        # 添加标题和标签
+        plt.title("Error Analysis of " + self.name(), fontsize=16)
+        plt.xlabel("Step Size (h)", fontsize=14)
+        plt.ylabel("Error", fontsize=14)
+        
+        # 增加图例
+        plt.legend(fontsize=12)
+        
+        # 添加网格以便更好地分析趋势
+        plt.grid(True, which="both", linestyle="--", alpha=0.7)
+        
+        # 显示图像
+        plt.show()
 
 #一阶导数的前向差分
 class forward_diff_1st(finite_diff):
@@ -64,7 +111,9 @@ class forward_diff_1st(finite_diff):
     
     def name(self):
         return "Forward_Diff_1st"
-
+    
+    def expo(self):
+        return 1
 
 #一阶导数的中心差分 
 class central_diff_1st(finite_diff):
@@ -78,6 +127,9 @@ class central_diff_1st(finite_diff):
     
     def name(self):
         return "Central_Diff_1st"
+    
+    def expo(self):
+        return 2
 
 #二阶导数的前向差分 
 class forward_diff_2st(finite_diff):
@@ -91,6 +143,9 @@ class forward_diff_2st(finite_diff):
     
     def name(self):
         return "Forward_Diff_2st"
+    
+    def expo(self):
+        return 2
 
 #二阶导数的中心差分 
 class central_diff_2st(finite_diff):
@@ -104,10 +159,19 @@ class central_diff_2st(finite_diff):
     
     def name(self):
         return "Central_Diff_2st"
+    
+    def expo(self):
+        return 3
 
 def convergence_order():
     diffs = [forward_diff_1st(), forward_diff_2st(), central_diff_1st(), central_diff_2st()]
     for diff in diffs:
         diff.convergence_order_paint()
 
-convergence_order()
+def error_analysis():
+    diffs = [forward_diff_1st(), forward_diff_2st(), central_diff_1st(), central_diff_2st()]
+    for diff in diffs:
+        diff.error_paint()
+
+#convergence_order()
+error_analysis()
