@@ -17,7 +17,7 @@ class scheme(ABC):
         pass
 
     def stablity_analysis(self, Nx = 301):
-        for T in [1.0, 1.25, 2.0]:
+        for T in [1.0, 1.25, 2.0]:#默认空间格点数为301，考察CFL数为0.9，1.0，1.1时推进到T=1.0，1.25和2.0时的情况
             CFLs = np.linspace(0.9, 1.1, 3)
             plt.figure(figsize=(10, 6))
             dx = 3.0 / (Nx - 1)
@@ -38,7 +38,7 @@ class scheme(ABC):
             plt.savefig(filename)
 
     def order_analysis(self, CFL = 0.8, T = 1.0):
-        Ns = [60 * (2 ** i) for i in range(11)]
+        Ns = [60 * (2 ** i) for i in range(11)]#默认CFL数为0.8，推进到T=1.0，逐渐分半加密空间网格
         L2_errors = []
         h = []
         orders = []
@@ -62,6 +62,35 @@ class scheme(ABC):
         plt.legend()
         filename = f'./pictures/Convergence_Order_of_{self.name()}.png'
         plt.savefig(filename)
+    
+    def evolution(self, CFL = 0.8, T = 100.0):#生成解的演化动画，时间推进到T=100.0，CFL数=0.8，时间步长固定为0.01
+        dt = 0.01
+        dx = dt / CFL
+        Nt = int(T / dt) + 1
+        Nx = int(3.0 / dx) + 1
+        x, u, _ = self.numerical_solution(Nx, Nt, CFL)
+        filenames = []
+        for t in range(Nt):
+            if t % 10 == 0:
+                #绘图部分，ai生成
+                plt.clf()
+                plt.plot(x, u[t, :], 'r-', label='Numerical Solution')
+                plt.plot(x, u_exact(x, dt * t), 'b--', label='Exact Solution')
+                plt.title(f'Solution Comparison at t = {t * dt:.2f}')
+                plt.xlabel('x')
+                plt.ylabel('u')
+                plt.legend()
+                plt.grid(True)
+                filename = f'./pictures/{self.name()}_{t}.png'
+                plt.savefig(filename)
+                filenames.append(filename)
+        with imageio.get_writer(f'./pictures/solution_evolution_of_{self.name()}.mp4', fps=10) as writer:
+            for filename in filenames:
+                image = imageio.imread(filename)
+                writer.append_data(image)
+        for filename in filenames:
+            os.remove(filename)
+
 
 
 class Upwind(scheme):
@@ -113,8 +142,6 @@ class LaxWendroff(scheme):
 
 schemes = [Upwind(), LeapFrog(), LaxWendroff()]
 for scheme in schemes:
-    scheme.stablity_analysis()
-    scheme.order_analysis()
-
-
-
+    #scheme.stablity_analysis()
+    #scheme.order_analysis()
+    scheme.evolution()
