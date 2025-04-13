@@ -1,16 +1,151 @@
-\documentclass{article}
-\usepackage{hyperref}
+\documentclass[12pt, a4paper]{article}
+\usepackage{ctex} % 支持中文处理
+\usepackage{geometry} % 页面布局
+\usepackage{graphicx} % 图片支持
+\usepackage{hyperref} % 超链接支持
+\usepackage{amsmath} % 数学公式
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{bm}
+\usepackage{color}
+\usepackage{physics}
+
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm} % 设置页边距
+\title{数理算法原理}
+\author{安庭毅\ 工学院 \ 2100011014}
+\date{\today} % 使用今天的日期
 
 \begin{document}
 
-\title{MP4 Video Link Example}
-\author{}
-\date{}
+\maketitle % 显示标题
+\section{一阶迎风格式}
+对于格式
+\begin{align}
+  u^{n+1}_{j} = u^{n}_{j} - c(u^n_j - u^n_{j-1})
+\end{align}
+在周期边界条件的假定下，采用Fourier分析法分析其稳定性。
 
-\maketitle
+记延拓函数为
+\begin{align}
+  u^n(x) = u^n_j, x_j \leqslant x < x_{j+1}
+\end{align}
+容易知道该延拓函数在$\mathbb{R}$上的$L_2$范数等于第n层数值解的离散$L_2$范数。
 
-You can watch the video by clicking the link below:
+则上述迎风格式转化为：
+\begin{align}
+  u^{n+1}(x) = u^n(x) - c(u^n(x) - u^n(x-h))
+\end{align}
 
-\href{run:./pictures/solution_evolution.mp4}{Click here to view the video}
+两侧做Fourier变换，得到：
+\begin{align}
+  \hat{u}^{n+1}(k) = (1 - c + ce^{-ikh})\hat{u}^n(k)
+\end{align}
 
+两侧取L2范数，由Parseval等式，有
+\begin{align}
+  \Vert u^n \Vert ^2 = \Vert \hat{u}^n \Vert ^ 2 = \int _\mathbb{R} |1 - c + ce^{-ikh} |^{2n} |\hat{u}^0(k)|^2 \dd{k}
+\end{align}
+
+故知稳定性条件为：
+\begin{align}
+  &|G| = |1 - c + ce^{-ikh}| \leqslant 1 \\
+  &\Rightarrow \Vert u^{n} \Vert \leqslant \sqrt{\int _\mathbb{R} |\hat{u}^0(k)|^2 \dd{k}} = \Vert u^0 \Vert
+\end{align}
+
+即
+\begin{align}
+  |c| \leqslant 1
+\end{align}
+
+下考虑CFL数固定时的收敛阶。记$(x_j, t_n)$处真实解与数值解之差为$\epsilon^n_j$, 将$\epsilon^n_j$分解为真实解与将真实解代入差分方程得到的
+$(x_j, t_n)$处的值的差，和该差与数值解的差，利用Taylor展开，有：
+\begin{align}
+  \epsilon^{n+1}_j = E^n_j h^2 + (1 - c)\epsilon^n_j + c\epsilon^n_{j-1}
+\end{align}
+其中$E^n_j$是只和Taylor展开Lagrange余项中的导数相关的项。
+
+利用Fourier分析类似的方法，可得：
+\begin{align}
+  \Vert\epsilon^{n + 1}\Vert \leqslant \Vert E^n \Vert h^2 + |G|\Vert \epsilon^n \Vert
+\end{align}
+
+若认为$\Vert E^n \Vert$在h趋于0时对n是一致有界$L$的，考虑到推进到固定时刻T时，$n=\frac{T}{\Delta t}=\frac{aT}{ch}=O(\frac{1}{h})$,
+并且格式稳定时$|G|\leqslant1$，有：
+\begin{align}
+  \Vert \epsilon^{n} \Vert \leqslant nLh^2 + \Vert \epsilon^{0} \Vert = O(h)
+\end{align}
+故一阶迎风格式的收敛阶应为1。
+
+最后，由一阶迎风格式的修正方程
+\begin{align}
+  u_t + au_x = \frac{ah}{2}(1 - c)u_{xx} - \frac{ah^2}{6}(1 - c)(1 - 2c)u_{xxx} + Res
+\end{align}
+可知数值解以耗散为主导，当时间推进到足够大时，应能观察到振幅的变化。
+
+\section{LaxWendroff格式}
+使用上述类似的方法，可得LaxWendroff格式的放大因子为
+\begin{align}
+  G = 1 - c^2(1 - \cos kh) - ic\sin kh
+\end{align}
+于是稳定性条件为$|c|\leqslant 1$。
+
+同样，类似的方法可以得到收敛阶为2，这里不再赘述。
+
+考虑修正方程：
+\begin{align}
+  u_t + au_x = -\frac{ah^2}{6}(1 - c^2)u_{xxx} - \frac{ah^3}{8}c(1 - c^2)u_{xxxx} + Res
+\end{align}
+
+可知数值解以色散为主导，随时间推进，应能观察到相位的误差。
+
+\section{蛙跳格式}
+对于蛙跳格式
+\begin{align}
+  u^{n + 1}_{j} = u^{n - 1}_j - c(u^n_{j + 1} - u^n_{j - 1})
+\end{align}
+
+将其转写为差分方程组
+\begin{align}
+  \begin{bmatrix}
+    u^{n + 1}_j \\
+    v^{n + 1}_j
+  \end{bmatrix}
+  =
+  \begin{bmatrix}
+    v_j^n - c(u^n_{j + 1} - u^n_{j - 1}) \\
+    u_j^n
+  \end{bmatrix}
+\end{align}
+
+仿照1中得到延拓函数$\textbf{U}^n(x)$，两侧做Fourier变换，得
+\begin{align}
+  \hat{\textbf{U}}^{n + 1}(k) = 
+  \begin{bmatrix}
+    ce^{-ikh} - ce^{ikh}  &1 \\
+    1  &0
+  \end{bmatrix}
+  \hat{\textbf{U}}^n(k)
+\end{align}
+
+考虑到此时的增长矩阵$G$是正规矩阵，可以酉正交对角化，记为$\textbf{G} = \textbf{P}^{H}\textbf{D}\textbf{P}$，
+则有：
+\begin{align}
+  \Vert \textbf{U}^n \Vert^2 = \Vert \hat{\textbf{U}}^n \Vert^2 = \int_\mathbb{R} (\textbf{P}\hat{\textbf{U}}^0)^H (\overline{\textbf{D}}\textbf{D})^n (\textbf{P}\hat{\textbf{U}}^0) \dd{k} 
+\end{align}
+
+考虑到增长矩阵对k是连续的，故其谱半径是k的连续函数。而$\textbf{D}$的元素即为$\textbf{G}$的特征值，于是由上式可知，格式稳定等价于$\textbf{G}$的谱半径对任意k均小于等于1。即：
+\begin{align}
+  |G^{\pm}| = |-ic\sin kh \pm (1 - c^2\sin^2kh)| \leqslant 1 \Leftrightarrow |c| \leqslant 1
+\end{align}
+
+故格式稳定要求c的模长不大于1。
+
+同样，进行类似于1中的分析可知此时收敛阶为2，这里不再赘述。
+
+考虑蛙跳格式的修正方程：
+\begin{align}
+  u_t + au_x = -\frac{ah^2}{6}(1 - c^2)u_{xxx} - \frac{ah^4}{120}(1-c^2)(1-9c^2)u_{xxxxx} + Res
+\end{align}
+可以看出蛙跳格式的修正方程无偶数阶导数，所以是无耗散的；由于色散项占主导，随时间推进可观察到相位的误差。
 \end{document}
