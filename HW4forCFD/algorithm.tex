@@ -1,0 +1,189 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage{ctex} % 支持中文处理
+\usepackage{geometry} % 页面布局
+\usepackage{graphicx} % 图片支持
+\usepackage{hyperref} % 超链接支持
+\usepackage{amsmath} % 数学公式
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{bm}
+\usepackage{color}
+\usepackage{physics}
+\newtheorem{lemma}{引理}
+\newtheorem{theorem}{定理}
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm} % 设置页边距
+\title{数理算法原理}
+\author{安庭毅\ 工学院 \ 2100011014}
+\date{\today} % 使用今天的日期
+
+\begin{document}
+
+\maketitle % 显示标题
+\section{SOR迭代格式推导}
+对于源项为0的矩形区域上的泊松方程，x轴和y轴以相同步长离散后，
+若将T展平为一维向量，设内部点（去除边界点）共有M行N列，
+则对应的系数矩阵$\textbf{A}$为（将边界条件移至右端，故考虑齐次Dirichlet边界条件）：
+\begin{equation}
+    \left[
+    \begin{array}{ccccc}
+    \mathbf{T}_N & \mathbf{I}_N & & & \\
+    \mathbf{I}_N & \mathbf{T}_N & \mathbf{I}_N & & \\
+    & \mathbf{I}_N & \mathbf{T}_N & \ddots & \\
+    & & \ddots & \ddots & \mathbf{I}_N \\
+    & & & \mathbf{I}_N & \mathbf{T}_N
+    \end{array}
+    \right]
+    \begin{array}{l}
+    \left.\vphantom{\begin{array}{c}
+    \mathbf{T}_N \\
+    \mathbf{I}_N \\
+    \mathbf{I}_N \\
+    \vdots \\
+    \mathbf{I}_N
+    \end{array}}\right\} M \text{块}
+    \end{array}
+\end{equation}
+
+其中$\mathbf{T}_N$为：
+\begin{equation}
+    \left[
+    \begin{array}{ccccc}
+    -4 & 1 & & & \\
+    1 & -4 & 1 & & \\
+    & 1 & -4 & \ddots & \\
+    & & \ddots & \ddots & 1 \\
+    & & & 1 & -4
+    \end{array}
+    \right]
+    \begin{array}{l}
+    \left.\vphantom{\begin{array}{c}
+    \mathbf{T}_N \\
+    \mathbf{I}_N \\
+    \mathbf{I}_N \\
+    \vdots \\
+    \mathbf{I}_N
+    \end{array}}\right\} N \text{列}
+    \end{array}
+\end{equation}
+
+记$\mathbf{A} = \mathbf{D} - \widetilde{\mathbf{L}} - \widetilde{\mathbf{U}}$，
+其中$\mathbf{D}$是对角线矩阵，$\widetilde{\mathbf{L}}$是下三角矩阵，$\widetilde{\mathbf{U}}$
+是上三角矩阵。进而SOR迭代格式为：
+\begin{align}
+    \mathbf{T}^{k+1} = (\mathbf{D}-\omega\widetilde{\mathbf{L}})^{-1}(\omega\widetilde{\mathbf{U}}+(1-\omega)\textbf{D})\mathbf{T}^{k} + \omega(\mathbf{D}-\omega\widetilde{\mathbf{L}})^{-1}\mathbf{b}
+\end{align}
+其中$\omega$是松弛因子。
+
+该格式对应的分量形式为：
+\begin{align}
+    T^{k+1}_{i,j}=(1-\omega)T^k_{i,j} + \frac{\omega}{4}(T^k_{i+1,j}+T^k_{i,j+1}+T^{k+1}_{i-1,j}+T^{k+1}_{i,j-1})
+\end{align}
+
+\section{理论最优松弛因子分析}
+该部分内容参考自《Applied Numerical Linear Algebra》，James W. Demmel著。
+
+\begin{lemma}
+    对于$\mathbf{A} = \mathbf{D} - \widetilde{\mathbf{L}} - \widetilde{\mathbf{U}}$,其中$\mathbf{D}$的元素不为$0$。
+    记$\mathbf{L} = \mathbf{D}^{-1}\widetilde{\mathbf{L}}$，$\mathbf{U} = \mathbf{D}^{-1}\widetilde{\mathbf{U}}$,
+    若$\mathbf{R}_J(\alpha)=\alpha\mathbf{L} + \frac{1}{\alpha}\mathbf{U}$对任意不为$0$的$\alpha$具有相同的特征多项式，
+    则有：
+    \begin{enumerate}
+        \item[(1)] $\mathbf{A}$对应的Jacobi迭代矩阵$\mathbf{R}_J$的特征值是一正一负成对出现的；
+        \item[(2)] 设$\lambda$是$\mathbf{A}$对应的SOR迭代矩阵$\mathbf{R}_{SOR(\omega)}=(\mathbf{I}-\omega\mathbf{L})^{-1}((1-\omega)\mathbf{I}+\omega\mathbf{U})$的非零特征值，则存在$\mu$为Jacobi迭代矩阵的特征值，使得$(\lambda+\omega-1)^2=\lambda\omega^2\mu^2$；
+        \item[(3)] SOR迭代收敛的必要条件是$0<\omega<2$。
+    \end{enumerate}
+\end{lemma}
+\begin{proof}[证明]
+    (1)显然，只证明(2)和(3)。对于非零的特征值$\lambda$，有：
+    \begin{align}
+        0 = \det(\lambda\mathbf{I}-\mathbf{R}_{SOR(\omega)}) &= \det((\mathbf{I}-\omega\mathbf{L})(\lambda\mathbf{I}-\mathbf{R}_{SOR(\omega)})) \\
+                                                           &= \det(\lambda\mathbf{I}-\lambda\omega\mathbf{L}-(1-\omega)\mathbf{I}-\omega\mathbf{U}) \\
+                                                           &= (\sqrt{\lambda}\omega)^n\det((\frac{\lambda+\omega-1}{\sqrt{\lambda}\omega})\mathbf{I}-\sqrt{\lambda}\mathbf{L}-\frac{1}{\sqrt{\lambda}}\mathbf{U}) \\
+                                                           &= (\sqrt{\lambda}\omega)^n\det((\frac{\lambda+\omega-1}{\sqrt{\lambda}\omega})\mathbf{I}-\mathbf{L}-\mathbf{U})
+    \end{align}
+
+    于是$\frac{\lambda+\omega-1}{\sqrt{\lambda}\omega}$是Jacobi迭代矩阵的特征值，这就证明了(2)。
+    对于(3)，令SOR迭代矩阵的特征多项式中的$\lambda=0$（不需要特征多项式相同的条件）：
+    \begin{align}
+        \phi(0) &=  (-1)^n\prod^n_i\lambda_i\\
+                &= (-1)^n\det((1-\omega)\mathbf{I}-\omega\mathbf{U})\\
+                &= (-1)^n(1-\omega)^n
+    \end{align}
+    于是$\rho(\mathbf{R}_{SOR(\omega)}) \geqslant |\omega-1|$，故知道收敛时（$\rho(\mathbf{R}_{SOR(\omega)})<1$）一定有$0<\omega<2$。
+\end{proof}
+\begin{theorem}
+    设$\mathbf{A}$满足上述引理中的条件，且对应的Jacobi迭代矩阵的特征值均为实数，并有$0<\rho=\rho(\mathbf{R}_J)<1$,
+    则SOR迭代法中的最优松弛因子（使得SOR迭代矩阵的谱半径最小的松弛因子）$\omega_{opt}=\frac{2}{1+\sqrt{1-\rho^2}}$。
+\end{theorem}
+\begin{proof}
+由引理知：
+    \begin{align}
+        (\lambda+\omega-1)^2=\lambda\omega^2\mu^2\Rightarrow\lambda=\frac{1}{2}\omega^2\mu^2+1-\omega\pm\omega\mu\sqrt{\frac{1}{4}\omega^2\mu^2-\omega+1}
+    \end{align}
+当$\omega\geqslant\frac{2}{1+\sqrt{1-\rho^2}}$时，可知SOR迭代矩阵的特征值一定非0；并且由于此时上述解的判别式小于0，可知特征值均为复数，故谱半径为$\omega-1$。
+
+而$\omega<\frac{2}{1+\sqrt{1-\rho^2}}$时，若$\omega=1$，则$\mathbf{R}_{SOR(\omega)}$有零特征值，但由于Jacobi迭代矩阵有非零特征值，故该SOR迭代矩阵也有非零特征值（$\mu^2$），此时谱半径为$\rho^2$；若$omega$不为1，则
+$\mathbf{R}_{SOR(\omega)}$无零特征值。结合两种情况可知此时谱半径为$1-\omega+\frac{1}{2}\omega^2\rho^2+\omega\rho\sqrt{1-\omega+\frac{1}{4}\omega^2\rho^2}$（注意$1-\omega+\frac{1}{2}\omega^2\rho^2+\omega\rho\sqrt{1-\omega+\frac{1}{4}\omega^2\rho^2}>\omega-1$）。
+
+进一步可以证明$\omega<\frac{2}{1+\sqrt{1-\rho^2}}$时谱半径总大于$\omega=\frac{2}{1+\sqrt{1-\rho^2}}$的谱半径，故$\omega_{opt}=\frac{2}{1+\sqrt{1-\rho^2}}$。
+\end{proof}
+\begin{theorem}
+此时的Poisson方程的系数矩阵正满足上述引理和定理的条件。于是利用定理1可计算得到此时SOR迭代的最佳松弛因子。
+\end{theorem}
+\begin{proof}
+记$\mathbf{A}=-4\mathbf{I}-\widetilde{\mathbf{L}}-\widetilde{\mathbf{L}}^T$，可以证明存在排列矩阵$\mathbf{P}$使得：
+\begin{align}
+    \mathbf{P}\widetilde{\mathbf{L}}\mathbf{P}^T = 
+    \left[
+    \begin{array}{cc}
+    \mathbf{O} & \mathbf{O}\\
+    \widehat{\mathbf{L}} & \mathbf{O}
+    \end{array}
+    \right]
+\end{align}
+于是有如下关系（$\sim$代表特征多项式相同）：
+\begin{align}
+        &\mathbf{R}_J(\alpha)=-\frac{\alpha}{4}\widetilde{\mathbf{L}}-\frac{1}{4\alpha}\widetilde{\mathbf{L}}^T\\ 
+    \sim&\mathbf{P}\mathbf{R}_J(\alpha)\mathbf{P}^T=
+    \left[
+        \begin{array}{cc}
+        \mathbf{O} & -\frac{1}{4\alpha}\widehat{\mathbf{L}}^T\\
+        -\frac{\alpha}{4}\widehat{\mathbf{L}} & \mathbf{O}
+        \end{array}
+    \right]\\   
+    \sim&\left[
+        \begin{array}{cc}
+        \mathbf{I} & \\
+         & \frac{1}{\alpha}\mathbf{I}
+        \end{array}
+    \right]
+    \left[
+        \begin{array}{cc}
+        \mathbf{O} & -\frac{1}{4\alpha}\widehat{\mathbf{L}}^T\\
+        -\frac{\alpha}{4}\widehat{\mathbf{L}} & \mathbf{O}
+        \end{array}
+    \right]
+    \left[
+        \begin{array}{cc}
+        \mathbf{I} & \\
+         & \alpha\mathbf{I}
+        \end{array}
+    \right]=
+    \mathbf{P}\mathbf{R}_J(1)\mathbf{P}^T\\
+    \sim&\mathbf{R}_J(1)
+\end{align} 
+这说明引理的条件满足。
+
+另一方面，可以证明$\mathbf{A}$的特征值为：
+\begin{align}
+    \lambda_{i,j} = -4 + 2(\cos(\frac{\pi i}{N+1})+\cos(\frac{\pi j}{M+1}))\quad i=1\dots N, j=1\dots M
+\end{align}
+于是$\mathbf{R}_J=\mathbf{I}+\frac{1}{4}\mathbf{A}$的特征值为：
+\begin{align}
+    \widetilde{\lambda}_{i,j} = \frac{1}{2}(\cos(\frac{\pi i}{N+1})+\cos(\frac{\pi j}{M+1}))\quad i=1\dots N, j=1\dots M
+\end{align}
+均为实数，且$\rho=\frac{1}{2}(\cos(\frac{\pi}{N+1})+\cos(\frac{\pi}{M+1}))$在$0$到$1$之间。
+\end{proof}
+上述讨论给出了矩形区域Poisson方程理论最优松弛因子，可与数值计算得到的最有松弛因子相比较。
+\end{document}
