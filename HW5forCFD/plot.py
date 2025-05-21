@@ -13,7 +13,7 @@ def find_vortex(x, y, psi, N):#寻找流函数极值点确定涡心
                 vortex.append([x[i], y[j]])
 
 #绘图，ai生成
-def plot_streamline(x, y, psi, u, v, N, density, x_start, x_end, y_start, y_end, num):#order代表着重展示的涡的编号
+def plot_streamline(x, y, psi, u, v, N, density, x_start, x_end, y_start, y_end, num):#num代表着重展示的涡的编号
     # 创建网格
     X, Y = np.meshgrid(x, y)
     

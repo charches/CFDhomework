@@ -1,0 +1,53 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage{ctex} % 支持中文处理
+\usepackage{geometry} % 页面布局
+\usepackage{graphicx} % 图片支持
+\usepackage{hyperref} % 超链接支持
+\usepackage{amsmath} % 数学公式
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{bm}
+\usepackage{color}
+\usepackage{physics}
+\newtheorem{lemma}{引理}
+\newtheorem{theorem}{定理}
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm} % 设置页边距
+\title{数理算法原理}
+\author{安庭毅\ 工学院 \ 2100011014}
+\date{\today} % 使用今天的日期
+
+\begin{document}
+
+\maketitle % 显示标题
+\section{涡量流函数方程推导}
+对于如下无量纲化的二维粘性不可压缩流体的方程组：
+\begin{align}
+    \frac{\partial u}{\partial x} + \frac{\partial v}{\partial y} &= 0 \\
+    \frac{\partial u}{\partial t} + u \frac{\partial u}{\partial x} + v \frac{\partial u}{\partial y} &=
+    \frac{\partial p}{\partial x} + \frac{1}{Re}\nabla^2u \\
+    \frac{\partial v}{\partial t} + u \frac{\partial v}{\partial x} + v \frac{\partial v}{\partial y} &=
+    \frac{\partial p}{\partial y} + \frac{1}{Re}\nabla^2v
+\end{align}
+将$\frac{\partial (3)}{\partial x}$减去$\frac{\partial (2)}{\partial y}$，并引入涡量$\omega=\frac{\partial v}{\partial x}-\frac{\partial u}{\partial y}$和流函数$u=\frac{\partial \psi}{\partial y}, v = -\frac{\partial \psi}{\partial x}$，得到：
+\begin{align}
+    \frac{\partial \omega}{\partial t} + \frac{\partial \psi}{\partial y}\frac{\partial \omega}{\partial x} - \frac{\partial \psi}{\partial x}\frac{\partial \omega}{\partial y} &= \frac{1}{Re}\nabla^2{\omega} \\
+    \nabla^2 \psi &= -\omega \\
+    u=\frac{\partial \psi}{\partial y}&, v = -\frac{\partial \psi}{\partial x}
+\end{align}
+即为涡量流函数方程。
+
+\section{求解步骤及边界条件设置}
+对于以上涡量流函数方程，网格离散后按如下步骤求解：
+
+1.计算当前时刻内点处的涡量，空间导数均使用中心差分格式计算；
+
+2.计算当前时刻流函数，这相当于通过sor迭代求解poisson方程;
+
+3.计算当前时刻边界上的涡量。
+
+在本问题中，边界均为流线，流函数在边界上为常值，设为0；涡量在边界上的取值由如下Thom公式计算：
+\begin{align}
+    \omega_b = -\frac{2(\psi_{inner} - \psi_b + v_\tau h)}{h^2}
+\end{align}
+\end{document}
