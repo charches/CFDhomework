@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 data = np.load('./data/flow_data.npz', allow_pickle = True)
-data_refined = np.load('./data/flow_refined_data.npz', allow_pickle = True)
 
 #绘图，ai生成
 def plot_streamline(x, y, psi, u, v, N, density, x_start, x_end, y_start, y_end, num):#order代表着重展示的涡的编号
@@ -18,14 +17,14 @@ def plot_streamline(x, y, psi, u, v, N, density, x_start, x_end, y_start, y_end,
     plt.streamplot(
         X, Y, u.T, v.T,
         density = density,                  # 可调整到5-15
-        color = 'k',                  # 黑色流线更清晰
-        linewidth = 0.8,              # 稍微加粗
-        arrowsize = 0.5,              # 减小箭头大小
-        arrowstyle = '->',            # 更简洁的箭头
-        minlength = 0.01,              # 允许更短的流线
-        maxlength = 1000,             # 避免流线过早终止
+        color = 'k',                  
+        linewidth = 0.8,             
+        arrowsize = 0.5,              
+        arrowstyle = '->',            
+        minlength = 0.01,              
+        maxlength = 1000,             
         integration_direction='both',
-        zorder=3                    # 确保流线在最上层
+        zorder=3                    
     )
     plt.xlim(x_start, x_end)
     plt.ylim(y_start, y_end)

@@ -23,13 +23,6 @@ v = np.zeros((N, N))
 
 u[:, -1] = utop(x)
 
-#插值后数据
-x_refined = np.linspace(0, 1, N_refined)
-y_refined = np.linspace(0, 1, N_refined)
-psi_refined = np.zeros((N_refined, N_refined))
-u_refined = np.zeros((N_refined, N_refined))
-v_refined = np.zeros((N_refined, N_refined))
-
 #利用Thom公式计算涡量的边界值
 def set_boundary():
     omega[1:-1, -1] = -2 * (psi[1:-1, -2] / (h ** 2) + u[1:-1, -1] / h)
@@ -67,23 +60,11 @@ def vorticity_solve():
             omega[i, j] = dt * (diff - conv) + omega_old[i, j]
     return np.max(np.abs(omega - omega_old))
 
-#网格插值
-def refine():
-    interp_fn = interpolate.RectBivariateSpline(x, y, psi)
-    psi_refined = interp_fn(x_refined, y_refined)
-    u_refined[:, -1] = utop(x_refined)
-    u_refined[1:-1, 1:-1] = (psi_refined[1:-1, 2:] - psi_refined[1:-1, :-2]) / (2 * h)
-    v_refined[1:-1, 1:-1] = -(psi_refined[2:, 1:-1] - psi_refined[:-2, 1:-1]) / (2 * h)
-
 #计算所得数据存储
 def save():
     np.savez(
         './data/flow_data.npz',
         x = x, y = y, psi = psi, u = u, v = v, N = np.array(N)
-    )
-    np.savez(
-        './data/flow_refined_data.npz',
-        x_refined = x_refined, y_refined = y_refined, psi_refined = psi_refined, u_refined = u_refined, v_refined = v_refined, N_refined = np.array(N_refined)
     )
 
 #求解总流程
@@ -101,6 +82,5 @@ def solve_lid_driven_cavity_flow():
 
 # 调用求解
 solve_lid_driven_cavity_flow()
-refine()
 save()
 
