@@ -18,7 +18,7 @@ def conserved_to_primitive(U):
     p = (GAMMA - 1) * (U[2] - 0.5 * rho * u ** 2)
     return rho, u, p
 
-def steger_warming(eigen_values, rho, u, c):#利用steger-warming分裂通量
+def steger_warming(eigen_values, rho, u, c):
     F = np.zeros(3)
     F[0] = 2 * (GAMMA - 1) * eigen_values[0] + eigen_values[1] + eigen_values[2]
     F[1] = 2 * (GAMMA - 1) * eigen_values[0] * u + (u + c) * eigen_values[1] + (u - c) * eigen_values[2]
@@ -26,7 +26,7 @@ def steger_warming(eigen_values, rho, u, c):#利用steger-warming分裂通量
     F *= rho / (2 * GAMMA)
     return F
 
-def Fp(U):
+def Fp(U):#利用steger-warming分裂通量
     rho, u, p = conserved_to_primitive(U)
     c = (GAMMA * p / rho) ** 0.5
     eigen_values = [u, u + c, u - c]
@@ -54,6 +54,51 @@ def Fn(U):
 
     return Fn
 
+import numpy as np
+
+#计算roe矩阵，ai生成
+def compute_roe_matrix(u, c, lambdas):
+    
+    lambda1, lambda2, lambda3 = lambdas
+    A = np.zeros((3, 3), dtype=np.float64)
+    
+    # 第一行
+    A[0, 0] = (lambda2 * (2*c**2 - GAMMA*u**2 + u**2) / (2*c**2) +
+               lambda1 * u * (2*c - u + GAMMA*u) / (4*c**2) -
+               lambda3 * u * (2*c + u - GAMMA*u) / (4*c**2))
+    
+    A[0, 1] = (lambda3 * (c + u - GAMMA*u) / (2*c**2) -
+                lambda1 * (c - u + GAMMA*u) / (2*c**2) +
+                lambda2 * u * (GAMMA - 1) / c**2)
+    
+    A[0, 2] = (GAMMA - 1) * (lambda1 - 2*lambda2 + lambda3) / (2*c**2)
+    
+    # 第二行
+    A[1, 0] = (lambda2 * u * (2*c**2 - GAMMA*u**2 + u**2) / (2*c**2) -
+               lambda3 * u * (c + u) * (2*c + u - GAMMA*u) / (4*c**2) -
+               lambda1 * u * (c - u) * (2*c - u + GAMMA*u) / (4*c**2))
+    
+    A[1, 1] = (lambda2 * u**2 * (GAMMA - 1) / c**2 +
+               lambda3 * (c + u) * (c + u - GAMMA*u) / (2*c**2) +
+               lambda1 * (c - u) * (c - u + GAMMA*u) / (2*c**2))
+    
+    A[1, 2] = (GAMMA - 1) * (c*lambda3 - c*lambda1 + lambda1*u - 2*lambda2*u + lambda3*u) / (2*c**2)
+    
+    # 第三行
+    A[2, 0] = (lambda2 * u**2 * (2*c**2 - GAMMA*u**2 + u**2) / (4*c**2) +
+                lambda1 * u * (c**2/(GAMMA-1) - c*u + u**2/2) * (2*c - u + GAMMA*u) / (4*c**2) -
+                lambda3 * u * (c*u + c**2/(GAMMA-1) + u**2/2) * (2*c + u - GAMMA*u) / (4*c**2))
+    
+    A[2, 1] = (lambda3 * (c*u + c**2/(GAMMA-1) + u**2/2) * (c + u - GAMMA*u) / (2*c**2) +
+                lambda2 * u**3 * (GAMMA - 1) / (2*c**2) -
+                lambda1 * (c**2/(GAMMA-1) - c*u + u**2/2) * (c - u + GAMMA*u) / (2*c**2))
+    
+    A[2, 2] = (lambda1 * (GAMMA - 1) * (c**2/(GAMMA-1) - c*u + u**2/2) / (2*c**2) -
+               lambda2 * u**2 * (GAMMA - 1) / (2*c**2) +
+               lambda3 * (GAMMA - 1) * (c*u + c**2/(GAMMA-1) + u**2/2) / (2*c**2))
+    
+    return A
+
 def compute_dt(U, CFL):
         N = U.shape[0]
         dt = 1e9
@@ -71,6 +116,14 @@ def RK3(U, dt, RHS): #三阶Runge-Kutta（heun格式）
 
 def calculate_l2_error(num, ref, N):
         return np.sqrt(np.mean((num - ref) ** 2)) / (N - 1)
+
+def F(U):
+    rho, u, p = conserved_to_primitive(U)
+    F = np.zeros(3)
+    F[0] = rho * u
+    F[1] = rho * u ** 2 + p
+    F[2] = u * (U[2] + p)
+    return F
 
 class solver:
     def __init__(self, CFL, T):
@@ -220,6 +273,45 @@ class WENO(solver):
         for i in range(ng, N - ng):
             RHS[i] = -(Fp_hat[i] - Fp_hat[i - 1] + Fn_hat[i] - Fn_hat[i - 1]) / dx
         return RHS
+
+class Roe(solver):
+    def roe(self, UL, UR):
+        rhol, ul, pl = conserved_to_primitive(UL)
+        rhor, ur, pr = conserved_to_primitive(UR)
+        Hl = GAMMA * pl / ((GAMMA - 1) * rhol) + 0.5 * ul ** 2
+        Hr = GAMMA * pr / ((GAMMA - 1) * rhor) + 0.5 * ur ** 2
+
+        u = (rhol ** 0.5 * ul + rhor ** 0.5 * ur) / (rhol ** 0.5 + rhor ** 0.5)
+        H = (rhol ** 0.5 * Hl + rhor ** 0.5 * Hr) / (rhol ** 0.5 + rhor ** 0.5)
+        c = ((GAMMA - 1) * (H - u ** 2 / 2)) ** 0.5
+
+        lambdas = [u - c, u, u + c]
+        lambdas = np.abs(lambdas)
+
+        for i in range(3):
+            if lambdas[i] < EPSILON:
+                lambdas[i] = (lambdas[i] ** 2 + EPSILON ** 2) / (2 * EPSILON)
+
+
+        return compute_roe_matrix(u, c, lambdas)
+
+    def RHS(self, U):#计算半离散后右侧表达式 
+        N = U.shape[0]
+        F = np.apply_along_axis(globals()['F'], axis = 1, arr = U)
+
+        ng = 1 #Roe格式两侧各有1个ghost cell
+        #计算正负数值通量
+        F_hat = np.zeros((N - 1, 3))
+        for i in range(ng - 1, N - ng):
+            F_hat[i] = 0.5 * (F[i] + F[i + 1]) - 0.5 * self.roe(U[i], U[i + 1]) @ (U[i + 1] - U[i])
+
+        #计算总体右侧表达式
+        dx = 1 / (N - 1)
+        RHS = np.zeros((N, 3))
+        for i in range(ng, N - ng):
+            RHS[i] = -(F_hat[i] - F_hat[i - 1]) / dx
+
+        return RHS
     
 def plot_comparison(rho, u, p, ref_data, title_suffix = ""):
     plt.figure(figsize=(12, 8))
@@ -281,20 +373,9 @@ CFL = 0.4
 T = 0.2
 
 #参考解
-_, _, values = sod.solve(left_state = (1, 1, 0), right_state = (0.1, 0.125, 0.), geometry = (-0.5, 0.5, 0), t = T, gamma = 1.4, npts = 1001)
+_, _, values = sod.solve(left_state = (1, 1, 0), right_state = (0.1, 0.125, 0.), geometry = (-0.5, 0.5, 0), t = T, GAMMA = 1.4, npts = 1001)
 
-#TVD格式（N = 201）
-U = np.zeros((201, 3))
-TVDsolver = TVD(CFL, T)
-rho, u, p = TVDsolver.solve(U)
-plot_comparison(rho, u, p, values, "(TVD Scheme, N=201)")
-
-#TVD格式（N = 501）
-U = np.zeros((501, 3))
-TVDsolver = TVD(CFL, T)
-rho, u, p = TVDsolver.solve(U)
-plot_comparison(rho, u, p, values, "(TVD Scheme, N=501)")
-
+'''
 #TVD格式（N = 1001）
 U = np.zeros((1001, 3))
 TVDsolver = TVD(CFL, T)
@@ -312,3 +393,33 @@ U = np.zeros((1001, 3))
 WENOsolver = WENO(CFL, T)
 rho, u, p = WENOsolver.solve(U)
 plot_comparison(rho, u, p, values, "(WENO Scheme, N=1001)")
+
+#Roe格式（N = 201）
+U = np.zeros((201, 3))
+Roesolver = Roe(CFL, T)
+rho, u, p = Roesolver.solve(U)
+plot_comparison(rho, u, p, values, "(Roe Scheme, N=201)")
+
+#Roe格式（N = 501）
+U = np.zeros((501, 3))
+Roesolver = Roe(CFL, T)
+rho, u, p = Roesolver.solve(U)
+plot_comparison(rho, u, p, values, "(Roe Scheme, N=501)")
+
+#Roe格式（N = 1001）
+U = np.zeros((1001, 3))
+Roesolver = Roe(CFL, T)
+rho, u, p = Roesolver.solve(U)
+plot_comparison(rho, u, p, values, "(Roe Scheme, N=1001)")
+
+#Roe格式（N = 2001）
+U = np.zeros((2001, 3))
+Roesolver = Roe(CFL, T)
+rho, u, p = Roesolver.solve(U)
+plot_comparison(rho, u, p, values, "(Roe Scheme, N=2001)")'''
+
+#Roe格式（N = 5001）
+U = np.zeros((5001, 3))
+Roesolver = Roe(CFL, T)
+rho, u, p = Roesolver.solve(U)
+plot_comparison(rho, u, p, values, "(Roe Scheme, N=5001)")
