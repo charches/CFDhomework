@@ -69,6 +69,9 @@ def RK3(U, dt, RHS): #三阶Runge-Kutta（heun格式）
     U2 = U + 2 / 3 * dt * RHS(U1)
     return 1 / 4 * (U + 3 * U1) + 3 / 4 * dt * RHS(U2)
 
+def calculate_l2_error(num, ref, N):
+        return np.sqrt(np.mean((num - ref) ** 2)) / (N - 1)
+
 class solver:
     def __init__(self, CFL, T):
         self.CFL = CFL
@@ -220,18 +223,33 @@ class WENO(solver):
     
 def plot_comparison(rho, u, p, ref_data, title_suffix = ""):
     plt.figure(figsize=(12, 8))
-    x = np.linspace(-0.5, 0.5, len(rho))
+
+    N = len(rho)
+    x = np.linspace(-0.5, 0.5, N)
+    x_ref = ref_data['x']  # 参考解的网格（10001个点）
+
+    # 找到数值解网格点在参考解中的最近邻索引
+    indices = np.abs(x_ref[:, None] - x).argmin(axis=0)
+    # 提取匹配的参考解值
+    ref_rho_matched = ref_data['rho'][indices]
+    ref_u_matched = ref_data['u'][indices]
+    ref_p_matched = ref_data['p'][indices]
+
+    l2_rho = calculate_l2_error(rho, ref_rho_matched, N)
+    l2_u = calculate_l2_error(u, ref_u_matched, N)
+    l2_p = calculate_l2_error(p, ref_p_matched, N)
 
     # 设置颜色和线型
     num_style = {'color': 'red', 'linestyle': '-', 'linewidth': 2, 'label': 'Numerical'}
     ref_style = {'color': 'blue', 'linestyle': '--', 'linewidth': 1.5, 'label': 'Reference'}
+    error_text = f'$L^2$ error: ρ={l2_rho:.3e}, u={l2_u:.3e}, p={l2_p:.3e}'
     
     # 1. 密度对比
     plt.subplot(3, 1, 1)
     plt.plot(x, rho, **num_style)
     plt.plot(ref_data['x'], ref_data['rho'], **ref_style)
     plt.ylabel('Density (ρ)')
-    plt.title(f'Solution Comparison {title_suffix}')
+    plt.title(f'Solution Comparison {title_suffix}\n{error_text}')
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.axis([-0.5, 0.5, 0, 1.1])
@@ -271,7 +289,7 @@ TVDsolver = TVD(CFL, T)
 rho, u, p = TVDsolver.solve(U)
 plot_comparison(rho, u, p, values, "(TVD Scheme, N=201)")
 
-'''#TVD格式（N = 501）
+#TVD格式（N = 501）
 U = np.zeros((501, 3))
 TVDsolver = TVD(CFL, T)
 rho, u, p = TVDsolver.solve(U)
@@ -293,4 +311,4 @@ plot_comparison(rho, u, p, values, "(NND Scheme, N=1001)")
 U = np.zeros((1001, 3))
 WENOsolver = WENO(CFL, T)
 rho, u, p = WENOsolver.solve(U)
-plot_comparison(rho, u, p, values, "(WENO Scheme, N=1001)")'''
+plot_comparison(rho, u, p, values, "(WENO Scheme, N=1001)")
