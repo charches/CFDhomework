@@ -1,0 +1,44 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage{ctex} % 支持中文处理
+\usepackage{geometry} % 页面布局
+\usepackage{graphicx} % 图片支持
+\usepackage{hyperref} % 超链接支持
+\usepackage{amsmath} % 数学公式
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{bm}
+\usepackage{color}
+\usepackage{physics}
+\newtheorem{lemma}{引理}
+\newtheorem{theorem}{定理}
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm} % 设置页边距
+\title{数理算法原理}
+\author{安庭毅\ 工学院 \ 2100011014}
+\date{\today} % 使用今天的日期
+
+\begin{document}
+
+\maketitle % 显示标题
+\section{FVS通量分裂}
+在讨论欧拉方程组的半离散差分格式时，若使用迎风格式，
+需要根据波传播的特征方向采用不同的基点计算数值通量。因此，再开始计算之前，可以利用FVS方法将通量按一定方式分裂为正负方向传播的通量。
+在本次作业中，我们统一使用Steger-Warming通量分裂方法，其基本思路如下：
+
+通量$F(U)$可以分解为$A(U)U$，其中$A(U)$是通量对守恒变量的Jacobi矩阵。由双曲性，$A$可以对角化，记$A=R\Lambda R^{-1}$。将$\Lambda$分解为正负部分，并以小量
+修正保证分裂后矩阵的光滑性，即：
+\begin{align}
+    \lambda^{\pm} = \frac{\lambda\pm\sqrt{\lambda ^ 2 + \epsilon ^ 2}}{2} 
+\end{align}
+
+再计算$F\pm=R\Lambda^{\pm}R^{-1}U$即得到分裂后沿不同方向的通量。之后分别利用这两个通量按对应的差分格式计算界面数值通量即可。
+\section{TVD格式}
+\subsection{数值通量计算}
+在本节中，我们以单个拟线性双曲方程为例，推导TVD格式。对于方程组的情形，只需将限制器分别作用于各个分量即可。
+
+对于如下方程：
+\begin{align}
+    u_t + f(u)_x = 0 
+\end{align}
+其中通量的差分有如下三种可选格式
+\end{document}

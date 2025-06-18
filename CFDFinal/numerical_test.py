@@ -33,7 +33,7 @@ def Fp(U):#利用steger-warming分裂通量
     eigen_values_p = []
 
     for v in eigen_values:
-        v_p = (v + (np.abs(v) + EPSILON ** 2) ** 0.5) / 2
+        v_p = (v + (v ** 2 + EPSILON ** 2) ** 0.5) / 2
         eigen_values_p.append(v_p)
     
     Fp = steger_warming(eigen_values_p, rho, u, c)
@@ -47,7 +47,7 @@ def Fn(U):
     eigen_values_n = []
 
     for v in eigen_values:
-        v_n = (v - (np.abs(v) + EPSILON ** 2) ** 0.5) / 2
+        v_n = (v - (v ** 2 + EPSILON ** 2) ** 0.5) / 2
         eigen_values_n.append(v_n)
     
     Fn = steger_warming(eigen_values_n, rho, u, c)
@@ -402,8 +402,8 @@ T = 0.2
 #参考解
 _, _, values = sod.solve(left_state = (1, 1, 0), right_state = (0.1, 0.125, 0.), geometry = (-0.5, 0.5, 0), t = T, GAMMA = 1.4, npts = 1001)
 
-'''
-#TVD格式（N = 1001）
+
+'''#TVD格式（N = 1001）
 U = np.zeros((1001, 3))
 TVDsolver = TVD(CFL, T)
 rho, u, p = TVDsolver.solve(U)
@@ -413,7 +413,7 @@ plot_comparison(rho, u, p, values, "(TVD Scheme, N=1001)")
 U = np.zeros((1001, 3))
 NNDsolver = NND(CFL, T)
 rho, u, p = NNDsolver.solve(U)
-plot_comparison(rho, u, p, values, "(NND Scheme, N=1001)")'''
+plot_comparison(rho, u, p, values, "(NND Scheme, N=1001)")
 
 #WENO格式（N = 1001），我的版本
 U = np.zeros((1001, 3))
@@ -427,7 +427,7 @@ WENOsolver = WENO(CFL, T, "Official")
 rho, u, p = WENOsolver.solve(U)
 plot_comparison(rho, u, p, values, "(WENO Scheme, N=1001, Jiang and Shu et al.)")
 
-'''Roe格式（N = 201）
+#Roe格式（N = 201）
 U = np.zeros((201, 3))
 Roesolver = Roe(CFL, T)
 rho, u, p = Roesolver.solve(U)
@@ -443,16 +443,10 @@ plot_comparison(rho, u, p, values, "(Roe Scheme, N=501)")
 U = np.zeros((1001, 3))
 Roesolver = Roe(CFL, T)
 rho, u, p = Roesolver.solve(U)
-plot_comparison(rho, u, p, values, "(Roe Scheme, N=1001)")
+plot_comparison(rho, u, p, values, "(Roe Scheme, N=1001)")'''
 
 #Roe格式（N = 2001）
 U = np.zeros((2001, 3))
 Roesolver = Roe(CFL, T)
 rho, u, p = Roesolver.solve(U)
 plot_comparison(rho, u, p, values, "(Roe Scheme, N=2001)")
-
-#Roe格式（N = 5001）
-U = np.zeros((5001, 3))
-Roesolver = Roe(CFL, T)
-rho, u, p = Roesolver.solve(U)
-plot_comparison(rho, u, p, values, "(Roe Scheme, N=5001)")'''
