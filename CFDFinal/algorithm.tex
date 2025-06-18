@@ -22,7 +22,7 @@
 \maketitle % 显示标题
 \section{FVS通量分裂}
 在讨论欧拉方程组的半离散差分格式时，若使用迎风格式，
-需要根据波传播的特征方向采用不同的基点计算数值通量。因此，再开始计算之前，可以利用FVS方法将通量按一定方式分裂为正负方向传播的通量。
+需要根据波传播的特征方向采用不同的基点计算数值通量。因此，在开始计算之前，可以利用FVS方法将通量按一定方式分裂为正负方向传播的通量。
 在本次作业中，我们统一使用Steger-Warming通量分裂方法，其基本思路如下：
 
 通量$F(U)$可以分解为$A(U)U$，其中$A(U)$是通量对守恒变量的Jacobi矩阵。由双曲性，$A$可以对角化，记$A=R\Lambda R^{-1}$。将$\Lambda$分解为正负部分，并以小量
@@ -30,15 +30,102 @@
 \begin{align}
     \lambda^{\pm} = \frac{\lambda\pm\sqrt{\lambda ^ 2 + \epsilon ^ 2}}{2} 
 \end{align}
+再计算$F\pm=R\Lambda^{\pm}R^{-1}U$即得到分裂后沿不同方向的通量，分别利用这两个通量按对应的差分格式计算界面数值通量即可。
+由于Jacobi矩阵的对角化可以解析算出，所以无需数值求解对角化。对于$\Lambda$是对角线元素为$u, u+c, u-c$处理之后的对角矩阵，对应的通量可由如下公式计算：
 
-再计算$F\pm=R\Lambda^{\pm}R^{-1}U$即得到分裂后沿不同方向的通量。之后分别利用这两个通量按对应的差分格式计算界面数值通量即可。
+\begin{align}
+\mathbf{F} = \frac{\rho}{2\gamma}
+\begin{bmatrix}
+2(\gamma - 1)\lambda_1 + \lambda_2 + \lambda_3 \\
+2(\gamma - 1)\lambda_1 u + (u + c)\lambda_2 + (u - c)\lambda_3 \\
+(\gamma - 1)\lambda_1 u^2 + \dfrac{3 - \gamma}{2(\gamma - 1)}(\lambda_2 + \lambda_3)c^2 + \dfrac{1}{2}\lambda_2(u + c)^2 + \dfrac{1}{2}\lambda_3(u - c)^2
+\end{bmatrix}
+\end{align}
+
 \section{TVD格式}
-\subsection{数值通量计算}
 在本节中，我们以单个拟线性双曲方程为例，推导TVD格式。对于方程组的情形，只需将限制器分别作用于各个分量即可。
 
 对于如下方程：
 \begin{align}
     u_t + f(u)_x = 0 
 \end{align}
-其中通量的差分有如下三种可选格式
+
+利用FVS可以将通量分解为两部分$f^p$和$f^n$。其中$f^p$对应的界面处数值通量有如下三种可选计算格式：
+\begin{align}
+    \text{一阶迎风：} \qquad &\widehat{f}^p_{j+\frac{1}{2}} = f^p_{j} \\
+    \text{二阶中心：} \qquad &\widehat{f}^p_{j+\frac{1}{2}} = f^p_{j} + \frac{1}{2}(f^p_{j+1}-f^p_j)\\
+    \text{二阶迎风：} \qquad &\widehat{f}^p_{j+\frac{1}{2}} = f^p_{j} + \frac{1}{2}(f^p_{j}-f^p_{j-1})\\
+\end{align}
+
+TVD格式的基本思想就是通过引入限制器，在光滑区选择精度更高的二阶格式，在间断部分选择一阶格式（
+一阶迎风格式的强耗散性可以抑制震荡）。同时通过保证半离散情形下$u_i(t)$总变差随时间不增，进一步抑制震荡。
+
+为此，将上式改写为：
+\begin{align}
+    \widehat{f}^p_{j+\frac{1}{2}} = f^p_{j} + \frac{1}{2}\phi(r^p_j)(f^p_{j+1}-f^p_{j})
+\end{align}
+
+其中，$r^p_j = \frac{f^p_j-f^p_{j-1}}{f^p_{j+1}-f^p_{j}}$。$\phi$的取值对应不同的差分格式：
+\begin{align}
+    \phi (r) = r,&\quad\text{二阶迎风}\\
+    \phi (r) = 1,&\quad\text{二阶中心}\\
+    \phi (r) = 0,&\quad\text{一阶中心}
+\end{align}
+
+对于限制器$\phi$的限制规则如下：
+\begin{enumerate}
+    \item $\phi\geqslant0$。
+    \item $\phi$在$r\leqslant0$时取0。这是因为$r$小于等于0时可以认为出现了数值振荡，需要用低阶格式抑制震荡。这也带来了TVD格式在极值点处精度下降的问题。
+    \item $\phi$在$r\geqslant0$时取值应在$r$和$1$之间。
+\end{enumerate}
+
+进一步，有如下计算结果：
+\begin{align}
+    \frac{\mathrm{d}{u_j}}{\mathrm{d}{t}} &= -\frac{1}{\Delta x}(\widehat{f}^p_{j+\frac{1}{2}} - \widehat{f}^p_{j-\frac{1}{2}})\\
+    &=-\frac{1}{2\Delta x}(\frac{\phi(r^p_j)}{r^p_j} - \phi{r^p_{j+1}} + 2)\frac{f^p_j - f^p_{j-1}}{u_j-u_{j-1}}(u_j-u_{j-1})
+\end{align}
+
+其中$\frac{f^p_j - f^p_{j-1}}{u_j-u_{j-1}}$对于正通量为正，故由三点半离散TVD格式条件，有：
+\begin{align}
+    \frac{\phi(r^p_j)}{r^p_j} - \phi(r^p_{j+1}) + 2 > 0 \Rightarrow \phi(r) < 2, \phi(r) < 2r
+\end{align}
+
+上述条件相当于给出了$\phi$允许的取值范围。在本次作业中，使用如下三种限制器进行数值测试：
+\begin{enumerate}
+    \item \textbf{Van Leer 限制器} 
+    \begin{equation*}
+        \phi(r) = \frac{r + |r|}{1 + |r|} = 
+        \begin{cases}
+            0 & \text{如果 } r \leq 0, \\
+            \dfrac{2r}{1 + r} & \text{如果 } r > 0.
+        \end{cases}
+    \end{equation*}
+
+    \item \textbf{Minmod 限制器}
+    \begin{equation*}
+        \phi(r) = \text{minmod}(1, r) = 
+        \begin{cases}
+            0 & \text{如果 } r \leq 0, \\
+            r & \text{如果 } 0 < r \leq 1, \\
+            1 & \text{如果 } r > 1.
+        \end{cases}
+    \end{equation*}
+
+    \item \textbf{Superbee 限制器}
+    \begin{equation*}
+        \phi(r) = \max\left(0, \min(1, 2r), \min(2, r)\right) = 
+        \begin{cases}
+            0 & \text{如果 } r \leq 0, \\
+            2r & \text{如果 } 0 < r \leq 0.5, \\
+            1 & \text{如果 } 0.5 < r \leq 1, \\
+            r & \text{如果 } 1 < r \leq 2, \\
+            2 & \text{如果 } r > 2.
+        \end{cases}
+    \end{equation*}
+\end{enumerate}
+
+其中Superbee限制器相当于取$\phi$可取值的上界，Minmod相当于下界，Van Leer介于二者之间。
+
+对于负通量，采用类似的方法可以得到对应的数值通量计算格式（迎风格式需要采用最多到右侧两个节点），这里不再赘述。注意限制器可以采用完全一致的形式，
+只是自变量形式不同。
 \end{document}

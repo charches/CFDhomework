@@ -165,15 +165,35 @@ class solver:
         pass
 
 class TVD(solver):
-    def minmod(self, r): #minmod限制器
+    def __init__(self, CFL, T, type):
+        super().__init__(CFL, T)
+        self.type = type
+    
+    def limiter(self, r): #minmod限制器
         phi = np.zeros(3)
-        for i in range(3):
-            if r[i] < 0:
-                phi[i] = 0
-            elif 0 <= r[i] and r[i] < 1:
-                phi[i] = r[i]
-            else:
-                phi[i] = 1
+        if self.type == "superbee":
+            for i in range(3):
+                if r[i] < 0:
+                    phi[i] = 0
+                elif 0 <= r[i] and r[i] < 0.5:
+                    phi[i] = 2 * r[i]
+                elif 0.5 <= r[i] and r[i] < 1:
+                    phi[i] = 1
+                elif 1 <= r[i] and r[i] < 2:
+                    phi[i] = r[i]
+                else:
+                    phi[i] = 2
+        elif self.type == "minmod":
+            for i in range(3):
+                if r[i] < 0:
+                    phi[i] = 0 
+                elif 0 <= r[i] and r[i] < 1:
+                    phi[i] = r[i]
+                else:
+                    phi[i] = 1
+        elif self.type == "vanleer":
+            for i in range(3):
+                phi[i] = (r[i] + np.abs(r[i])) / (1 + np.abs(r[i]))
         return phi
 
     def RHS(self, U):#计算半离散后右侧表达式 
@@ -187,10 +207,10 @@ class TVD(solver):
         Fn_hat = np.zeros((N - 1, 3))
         for i in range(ng - 1, N - ng):
             rp = (Fp[i] - Fp[i - 1]) / (Fp[i + 1] - Fp[i] + EPSILON)
-            Fp_hat[i] = Fp[i] + 0.5 * self.minmod(rp) * (Fp[i + 1] - Fp[i])
+            Fp_hat[i] = Fp[i] + 0.5 * self.limiter(rp) * (Fp[i + 1] - Fp[i])
 
             rn = (Fn[i + 2] - Fn[i + 1]) / (Fn[i + 1] - Fn[i] + EPSILON)
-            Fn_hat[i] = Fn[i + 1] - 0.5 * self.minmod(rn) * (Fn[i + 1] - Fn[i])
+            Fn_hat[i] = Fn[i + 1] - 0.5 * self.limiter(rn) * (Fn[i + 1] - Fn[i])
 
         #计算总体右侧表达式
         dx = 1 / (N - 1)
@@ -403,13 +423,25 @@ T = 0.2
 _, _, values = sod.solve(left_state = (1, 1, 0), right_state = (0.1, 0.125, 0.), geometry = (-0.5, 0.5, 0), t = T, GAMMA = 1.4, npts = 1001)
 
 
-'''#TVD格式（N = 1001）
+#TVD格式（N = 1001）使用minmod限制器
 U = np.zeros((1001, 3))
-TVDsolver = TVD(CFL, T)
+TVDsolver = TVD(CFL, T, "minmod")
 rho, u, p = TVDsolver.solve(U)
-plot_comparison(rho, u, p, values, "(TVD Scheme, N=1001)")
+plot_comparison(rho, u, p, values, "(TVD Scheme, N=1001, minmod limiter)")
 
-#NND格式（N = 1001）
+#TVD格式（N = 1001）使用superbee限制器
+U = np.zeros((1001, 3))
+TVDsolver = TVD(CFL, T, "superbee")
+rho, u, p = TVDsolver.solve(U)
+plot_comparison(rho, u, p, values, "(TVD Scheme, N=1001, superbee limiter)")
+
+#TVD格式（N = 1001）使用vanleer限制器
+U = np.zeros((1001, 3))
+TVDsolver = TVD(CFL, T, "vanleer")
+rho, u, p = TVDsolver.solve(U)
+plot_comparison(rho, u, p, values, "(TVD Scheme, N=1001, vanleer limiter)")
+
+'''#NND格式（N = 1001）
 U = np.zeros((1001, 3))
 NNDsolver = NND(CFL, T)
 rho, u, p = NNDsolver.solve(U)
@@ -443,10 +475,10 @@ plot_comparison(rho, u, p, values, "(Roe Scheme, N=501)")
 U = np.zeros((1001, 3))
 Roesolver = Roe(CFL, T)
 rho, u, p = Roesolver.solve(U)
-plot_comparison(rho, u, p, values, "(Roe Scheme, N=1001)")'''
+plot_comparison(rho, u, p, values, "(Roe Scheme, N=1001)")
 
 #Roe格式（N = 2001）
 U = np.zeros((2001, 3))
 Roesolver = Roe(CFL, T)
 rho, u, p = Roesolver.solve(U)
-plot_comparison(rho, u, p, values, "(Roe Scheme, N=2001)")
+plot_comparison(rho, u, p, values, "(Roe Scheme, N=2001)")'''
