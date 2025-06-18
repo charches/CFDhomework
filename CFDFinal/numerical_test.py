@@ -235,6 +235,10 @@ class NND(solver):
         return RHS
 
 class WENO(solver):
+    def __init__(self, CFL, T, type):
+        super().__init__(CFL, T)
+        self.type = type
+    
     def RHS(self, U):#计算半离散后右侧表达式 
         N = U.shape[0]
         Fp = np.apply_along_axis(globals()['Fp'], axis = 1, arr = U)
@@ -247,26 +251,49 @@ class WENO(solver):
         for i in range(ng - 1, N - ng):
             c = np.array([0.1, 0.6, 0.3])
 
-            fp = np.array([1 / 3 * Fp[i - 2] - 7 / 6 * Fp[i - 1] + 11 / 6 * Fp[i],
-                           1 / 3 * Fp[i + 1] + 5 / 6 * Fp[i] - 1 / 6 * Fp[i - 1],
-                           -1 / 6 * Fp[i + 2] + 5 / 6 * Fp[i + 1] + 1 / 3 * Fp[i]])
-            betap = np.array([(Fp[i] - 2 * Fp[i - 1] + Fp[i - 2]) ** 2 + 1 / 4 * ((Fp[i - 2] - 4 * Fp[i - 1] + 3 * Fp[i]) ** 2 + (Fp[i] - Fp[i - 2]) ** 2 + (Fp[i] - 4 * Fp[i - 1] + 3 * Fp[i - 2]) ** 2),
-                              (Fp[i + 1] - 2 * Fp[i] + Fp[i - 1]) ** 2 + 1 / 4 * ((Fp[i - 1] - 4 * Fp[i] + 3 * Fp[i + 1]) ** 2 + (Fp[i + 1] - Fp[i - 1]) ** 2 + (Fp[i + 1] - 4 * Fp[i] + 3 * Fp[i - 1]) ** 2),
-                              (Fp[i + 2] - 2 * Fp[i + 1] + Fp[i]) ** 2 + 1 / 4 * ((Fp[i] - 4 * Fp[i + 1] + 3 * Fp[i + 2]) ** 2 + (Fp[i + 2] - Fp[i]) ** 2 + (Fp[i + 2] - 4 * Fp[i + 1] + 3 * Fp[i]) ** 2)])
-            alphap = c / (EPSILON + betap) ** 2
-            alphap /= np.sum(alphap, axis = 0)
-            Fp_hat[i] = np.sum(fp * alphap, axis = 0)
+            if (self.type == "My Ver"):
+                fp = np.array([1 / 3 * Fp[i - 2] - 7 / 6 * Fp[i - 1] + 11 / 6 * Fp[i],
+                            1 / 3 * Fp[i + 1] + 5 / 6 * Fp[i] - 1 / 6 * Fp[i - 1],
+                            -1 / 6 * Fp[i + 2] + 5 / 6 * Fp[i + 1] + 1 / 3 * Fp[i]])
+                betap = np.array([(Fp[i] - 2 * Fp[i - 1] + Fp[i - 2]) ** 2 + 1 / 4 * ((Fp[i - 2] - 4 * Fp[i - 1] + 3 * Fp[i]) ** 2 + (Fp[i] - Fp[i - 2]) ** 2 + (Fp[i] - 4 * Fp[i - 1] + 3 * Fp[i - 2]) ** 2),
+                                (Fp[i + 1] - 2 * Fp[i] + Fp[i - 1]) ** 2 + 1 / 4 * ((Fp[i - 1] - 4 * Fp[i] + 3 * Fp[i + 1]) ** 2 + (Fp[i + 1] - Fp[i - 1]) ** 2 + (Fp[i + 1] - 4 * Fp[i] + 3 * Fp[i - 1]) ** 2),
+                                (Fp[i + 2] - 2 * Fp[i + 1] + Fp[i]) ** 2 + 1 / 4 * ((Fp[i] - 4 * Fp[i + 1] + 3 * Fp[i + 2]) ** 2 + (Fp[i + 2] - Fp[i]) ** 2 + (Fp[i + 2] - 4 * Fp[i + 1] + 3 * Fp[i]) ** 2)])
+                alphap = c / (EPSILON + betap) ** 2
+                alphap /= np.sum(alphap, axis = 0)
+                Fp_hat[i] = np.sum(fp * alphap, axis = 0)
 
-            fn = np.array([1 / 3 * Fn[i + 3] - 7 / 6 * Fn[i + 2] + 11 / 6 * Fn[i + 1],
-                           -1 / 6 * Fn[i + 2] + 5 / 6 * Fn[i + 1] + 1 / 3 * Fn[i],
-                           1 / 3 * Fn[i + 1] + 5 / 6 * Fn[i] - 1 / 6 * Fn[i - 1]
-                           ])
-            betan = np.array([(Fn[i + 1] - 2 * Fn[i + 2] + Fn[i + 3]) ** 2 + 1 / 4 * ((Fn[i + 3] - 4 * Fn[i + 2] + 3 * Fn[i + 1]) ** 2 + (Fn[i + 3] - Fn[i + 1]) ** 2 + (Fn[i + 1] - 4 * Fn[i + 2] + 3 * Fn[i + 3]) ** 2),
-                              (Fn[i] - 2 * Fn[i + 1] + Fn[i + 2]) ** 2 + 1 / 4 * ((Fn[i + 2] - 4 * Fn[i + 1] + 3 * Fn[i]) ** 2 + (Fn[i + 2] - Fn[i]) ** 2 + (Fn[i] - 4 * Fn[i + 1] + 3 * Fn[i + 2]) ** 2),
-                              (Fn[i - 1] - 2 * Fn[i] + Fn[i + 1]) ** 2 + 1 / 4 * ((Fn[i + 1] - 4 * Fn[i] + 3 * Fn[i - 1]) ** 2 + (Fn[i + 1] - Fn[i - 1]) ** 2 + (Fn[i] - 4 * Fn[i] + 3 * Fn[i + 1]) ** 2)])
-            alphan = c / (EPSILON + betan) ** 2
-            alphan /= np.sum(alphan, axis = 0)
-            Fn_hat[i] = np.sum(fn * alphan, axis = 0)
+                fn = np.array([1 / 3 * Fn[i + 3] - 7 / 6 * Fn[i + 2] + 11 / 6 * Fn[i + 1],
+                            -1 / 6 * Fn[i + 2] + 5 / 6 * Fn[i + 1] + 1 / 3 * Fn[i],
+                            1 / 3 * Fn[i + 1] + 5 / 6 * Fn[i] - 1 / 6 * Fn[i - 1]
+                            ])
+                betan = np.array([(Fn[i + 1] - 2 * Fn[i + 2] + Fn[i + 3]) ** 2 + 1 / 4 * ((Fn[i + 3] - 4 * Fn[i + 2] + 3 * Fn[i + 1]) ** 2 + (Fn[i + 3] - Fn[i + 1]) ** 2 + (Fn[i + 1] - 4 * Fn[i + 2] + 3 * Fn[i + 3]) ** 2),
+                                (Fn[i] - 2 * Fn[i + 1] + Fn[i + 2]) ** 2 + 1 / 4 * ((Fn[i + 2] - 4 * Fn[i + 1] + 3 * Fn[i]) ** 2 + (Fn[i + 2] - Fn[i]) ** 2 + (Fn[i] - 4 * Fn[i + 1] + 3 * Fn[i + 2]) ** 2),
+                                (Fn[i - 1] - 2 * Fn[i] + Fn[i + 1]) ** 2 + 1 / 4 * ((Fn[i + 1] - 4 * Fn[i] + 3 * Fn[i - 1]) ** 2 + (Fn[i + 1] - Fn[i - 1]) ** 2 + (Fn[i] - 4 * Fn[i] + 3 * Fn[i + 1]) ** 2)])
+                alphan = c / (EPSILON + betan) ** 2
+                alphan /= np.sum(alphan, axis = 0)
+                Fn_hat[i] = np.sum(fn * alphan, axis = 0)
+
+            if (self.type == "Official"):
+                fp = np.array([1 / 3 * Fp[i - 2] - 7 / 6 * Fp[i - 1] + 11 / 6 * Fp[i],
+                            1 / 3 * Fp[i + 1] + 5 / 6 * Fp[i] - 1 / 6 * Fp[i - 1],
+                            -1 / 6 * Fp[i + 2] + 5 / 6 * Fp[i + 1] + 1 / 3 * Fp[i]])
+                betap = np.array([13 / 12 * (Fp[i] - 2 * Fp[i - 1] + Fp[i - 2]) ** 2 + 1 / 4 * (Fp[i - 2] - 4 * Fp[i - 1] + 3 * Fp[i]) ** 2,
+                                13 / 12 * (Fp[i + 1] - 2 * Fp[i] + Fp[i - 1]) ** 2 + 1 / 4 * (Fp[i + 1] - Fp[i - 1]) ** 2,
+                                13 / 12 * (Fp[i + 2] - 2 * Fp[i + 1] + Fp[i]) ** 2 + 1 / 4 * (Fp[i + 2] - 4 * Fp[i + 1] + 3 * Fp[i]) ** 2])
+                alphap = c / (EPSILON + betap) ** 2
+                alphap /= np.sum(alphap, axis = 0)
+                Fp_hat[i] = np.sum(fp * alphap, axis = 0)
+
+                fn = np.array([1 / 3 * Fn[i + 3] - 7 / 6 * Fn[i + 2] + 11 / 6 * Fn[i + 1],
+                                -1 / 6 * Fn[i + 2] + 5 / 6 * Fn[i + 1] + 1 / 3 * Fn[i],
+                                1 / 3 * Fn[i + 1] + 5 / 6 * Fn[i] - 1 / 6 * Fn[i - 1]
+                                ])
+                betan = np.array([13 / 12 * (Fn[i + 1] - 2 * Fn[i + 2] + Fn[i + 3]) ** 2 + 1 / 4 * (Fn[i + 3] - 4 * Fn[i + 2] + 3 * Fn[i + 1]) ** 2,
+                                13 / 12 * (Fn[i] - 2 * Fn[i + 1] + Fn[i + 2]) ** 2 + 1 / 4 * (Fn[i + 2] - Fn[i]) ** 2 ,
+                                13 / 12 * (Fn[i - 1] - 2 * Fn[i] + Fn[i + 1]) ** 2 + 1 / 4 * (Fn[i - 1] - 4 * Fn[i] + 3 * Fn[i + 1]) ** 2])
+                alphan = c / (EPSILON + betan) ** 2
+                alphan /= np.sum(alphan, axis = 0)
+                Fn_hat[i] = np.sum(fn * alphan, axis = 0)
 
         dx = 1 / (N - 1)
         RHS = np.zeros((N, 3))
@@ -366,7 +393,7 @@ def plot_comparison(rho, u, p, ref_data, title_suffix = ""):
     plt.axis([-0.5, 0.5, 0, 1.1])
     
     plt.tight_layout()
-    plt.savefig(f"./pictures/Solution Comparison {title_suffix}", dpi = 300, bbox_inches = 'tight')
+    plt.savefig(f"./pictures/Solution Comparison {title_suffix}.png", dpi = 300, bbox_inches = 'tight')
 
 #基本参数设置
 CFL = 0.4
@@ -386,15 +413,21 @@ plot_comparison(rho, u, p, values, "(TVD Scheme, N=1001)")
 U = np.zeros((1001, 3))
 NNDsolver = NND(CFL, T)
 rho, u, p = NNDsolver.solve(U)
-plot_comparison(rho, u, p, values, "(NND Scheme, N=1001)")
+plot_comparison(rho, u, p, values, "(NND Scheme, N=1001)")'''
 
-#WENO格式（N = 1001）
+#WENO格式（N = 1001），我的版本
 U = np.zeros((1001, 3))
-WENOsolver = WENO(CFL, T)
+WENOsolver = WENO(CFL, T, "My Ver")
 rho, u, p = WENOsolver.solve(U)
-plot_comparison(rho, u, p, values, "(WENO Scheme, N=1001)")
+plot_comparison(rho, u, p, values, "(WENO Scheme, N=1001, My version)")
 
-#Roe格式（N = 201）
+#WENO格式（N = 1001）,论文中版本
+U = np.zeros((1001, 3))
+WENOsolver = WENO(CFL, T, "Official")
+rho, u, p = WENOsolver.solve(U)
+plot_comparison(rho, u, p, values, "(WENO Scheme, N=1001, Jiang and Shu et al.)")
+
+'''Roe格式（N = 201）
 U = np.zeros((201, 3))
 Roesolver = Roe(CFL, T)
 rho, u, p = Roesolver.solve(U)
@@ -416,10 +449,10 @@ plot_comparison(rho, u, p, values, "(Roe Scheme, N=1001)")
 U = np.zeros((2001, 3))
 Roesolver = Roe(CFL, T)
 rho, u, p = Roesolver.solve(U)
-plot_comparison(rho, u, p, values, "(Roe Scheme, N=2001)")'''
+plot_comparison(rho, u, p, values, "(Roe Scheme, N=2001)")
 
 #Roe格式（N = 5001）
 U = np.zeros((5001, 3))
 Roesolver = Roe(CFL, T)
 rho, u, p = Roesolver.solve(U)
-plot_comparison(rho, u, p, values, "(Roe Scheme, N=5001)")
+plot_comparison(rho, u, p, values, "(Roe Scheme, N=5001)")'''
