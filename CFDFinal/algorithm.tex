@@ -343,7 +343,7 @@ TVD格式的基本思想就是通过引入限制器，在光滑区选择精度�
 
 对于时间步长的选择，为保持计算稳定有如下限制：
 \begin{align}
-    \Delta t \leqslant\mathbf{CFL}\frac{\Delta x}{|u_{max|}+c}
+    \Delta t \leqslant\mathbf{CFL}\frac{\Delta x}{|u_{max}|+c}
 \end{align}
 
 需对每次时间推进按此式计算时间步长。
