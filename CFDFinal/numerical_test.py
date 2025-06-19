@@ -54,7 +54,45 @@ def Fn(U):
 
     return Fn
 
-import numpy as np
+def compute_R_inv(U):
+    rho, u, p = conserved_to_primitive(U)
+    c = np.sqrt(GAMMA * p / rho)  # 声速
+    c2 = c**2
+    
+    # 构造矩阵元素（直接按公式计算）
+    m11 = u * (2*c - u + GAMMA*u) / (4*c2)
+    m12 = -(c - u + GAMMA*u) / (2*c2)
+    m13 = (GAMMA - 1) / (2*c2)
+    
+    m21 = (2*c2 - GAMMA*u**2 + u**2) / (2*c2)
+    m22 = u * (GAMMA - 1) / c2
+    m23 = -(GAMMA - 1) / c2
+    
+    m31 = -u * (2*c + u - GAMMA*u) / (4*c2)
+    m32 = (c + u - GAMMA*u) / (2*c2)
+    m33 = (GAMMA - 1) / (2*c2)
+    
+    return np.array([
+        [m11, m12, m13],
+        [m21, m22, m23],
+        [m31, m32, m33]
+    ])
+
+def compute_R(U):
+    rho, u, p = conserved_to_primitive(U)
+    c = np.sqrt(GAMMA * p / rho)  # 声速
+    
+    # 构造矩阵元素
+    row1 = np.array([1, 1, 1])
+    row2 = np.array([u - c, u, u + c])
+    
+    # 第三行各项
+    term1 = (c**2)/(GAMMA - 1) - c*u + 0.5*u**2
+    term2 = 0.5*u**2
+    term3 = (c**2)/(GAMMA - 1) + c*u + 0.5*u**2
+    row3 = np.array([term1, term2, term3])
+    
+    return np.vstack([row1, row2, row3])
 
 #计算roe矩阵，ai生成
 def compute_roe_matrix(u, c, lambdas):
@@ -359,6 +397,48 @@ class Roe(solver):
             RHS[i] = -(F_hat[i] - F_hat[i - 1]) / dx
 
         return RHS
+
+class WENO_Charastic_Reconstruction(solver):
+    def RHS(self, U):#计算半离散后右侧表达式 
+        N = U.shape[0]
+        Fp = np.apply_along_axis(globals()['Fp'], axis = 1, arr = U)
+        Fn = np.apply_along_axis(globals()['Fn'], axis = 1, arr = U)
+
+        ng = 3 #WENO格式两侧各有3个ghost cell
+        #计算正负数值通量
+        Fp_hat = np.zeros((N - 1, 3))
+        Fn_hat = np.zeros((N - 1, 3))
+        for i in range(ng - 1, N - ng):
+            R = compute_R((U[i] + U[i + 1]) / 2)
+            R_inv = compute_R_inv((U[i] + U[i + 1]) / 2)
+            c = np.array([0.1, 0.6, 0.3])
+            
+            
+            fp = np.array([R_inv @ (1 / 3 * Fp[i - 2] - 7 / 6 * Fp[i - 1] + 11 / 6 * Fp[i]),
+                        R_inv @ (1 / 3 * Fp[i + 1] + 5 / 6 * Fp[i] - 1 / 6 * Fp[i - 1]),
+                        R_inv @ (-1 / 6 * Fp[i + 2] + 5 / 6 * Fp[i + 1] + 1 / 3 * Fp[i])])
+            betap = np.array([13 / 12 * (R_inv @ (Fp[i] - 2 * Fp[i - 1] + Fp[i - 2])) ** 2 + 1 / 4 * (R_inv @ (Fp[i - 2] - 4 * Fp[i - 1] + 3 * Fp[i])) ** 2,
+                            13 / 12 * (R_inv @ (Fp[i + 1] - 2 * Fp[i] + Fp[i - 1])) ** 2 + 1 / 4 * (R_inv @ (Fp[i + 1] - Fp[i - 1])) ** 2,
+                            13 / 12 * (R_inv @ (Fp[i + 2] - 2 * Fp[i + 1] + Fp[i])) ** 2 + 1 / 4 * (R_inv @ (Fp[i + 2] - 4 * Fp[i + 1] + 3 * Fp[i])) ** 2])
+            alphap = c / (EPSILON + betap) ** 2
+            alphap /= np.sum(alphap, axis = 0)
+            Fp_hat[i] = R @ np.sum(fp * alphap, axis = 0)
+
+            fn = np.array([R_inv @ (1 / 3 * Fn[i + 3] - 7 / 6 * Fn[i + 2] + 11 / 6 * Fn[i + 1]),
+                        R_inv @ (-1 / 6 * Fn[i + 2] + 5 / 6 * Fn[i + 1] + 1 / 3 * Fn[i]),
+                        R_inv @ (1 / 3 * Fn[i + 1] + 5 / 6 * Fn[i] - 1 / 6 * Fn[i - 1])])
+            betan = np.array([13 / 12 * (R_inv @ (Fn[i + 1] - 2 * Fn[i + 2] + Fn[i + 3])) ** 2 + 1 / 4 * (R_inv @ (Fn[i + 3] - 4 * Fn[i + 2] + 3 * Fn[i + 1])) ** 2,
+                            13 / 12 * (R_inv @ (Fn[i] - 2 * Fn[i + 1] + Fn[i + 2])) ** 2 + 1 / 4 * (R_inv @ (Fn[i + 2] - Fn[i])) ** 2 ,
+                            13 / 12 * (R_inv @ (Fn[i - 1] - 2 * Fn[i] + Fn[i + 1])) ** 2 + 1 / 4 * (R_inv @ (Fn[i - 1] - 4 * Fn[i] + 3 * Fn[i + 1])) ** 2])
+            alphan = c / (EPSILON + betan) ** 2
+            alphan /= np.sum(alphan, axis = 0)
+            Fn_hat[i] = R @ np.sum(fn * alphan, axis = 0)
+
+        dx = 1 / (N - 1)
+        RHS = np.zeros((N, 3))
+        for i in range(ng, N - ng):
+            RHS[i] = -(Fp_hat[i] - Fp_hat[i - 1] + Fn_hat[i] - Fn_hat[i - 1]) / dx
+        return RHS
     
 def plot_comparison(rho, u, p, ref_data, title_suffix = ""):
     plt.figure(figsize=(12, 8))
@@ -423,7 +503,7 @@ T = 0.2
 _, _, values = sod.solve(left_state = (1, 1, 0), right_state = (0.1, 0.125, 0.), geometry = (-0.5, 0.5, 0), t = T, GAMMA = 1.4, npts = 1001)
 
 
-#TVD格式（N = 1001）使用minmod限制器
+'''#TVD格式（N = 1001）使用minmod限制器
 U = np.zeros((1001, 3))
 TVDsolver = TVD(CFL, T, "minmod")
 rho, u, p = TVDsolver.solve(U)
@@ -441,7 +521,7 @@ TVDsolver = TVD(CFL, T, "vanleer")
 rho, u, p = TVDsolver.solve(U)
 plot_comparison(rho, u, p, values, "(TVD Scheme, N=1001, vanleer limiter)")
 
-'''#NND格式（N = 1001）
+#NND格式（N = 1001）
 U = np.zeros((1001, 3))
 NNDsolver = NND(CFL, T)
 rho, u, p = NNDsolver.solve(U)
@@ -482,3 +562,9 @@ U = np.zeros((2001, 3))
 Roesolver = Roe(CFL, T)
 rho, u, p = Roesolver.solve(U)
 plot_comparison(rho, u, p, values, "(Roe Scheme, N=2001)")'''
+
+#WENO格式（N = 1001）,论文中版本
+U = np.zeros((1001, 3))
+WENOsolver = WENO_Charastic_Reconstruction(CFL, T)
+rho, u, p = WENOsolver.solve(U)
+plot_comparison(rho, u, p, values, "(WENO Scheme with Charastic Reconstruction, N=1001, Jiang and Shu et al.)")
